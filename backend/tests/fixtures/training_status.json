@@ -1,0 +1,3 @@
+{"mostRecentTrainingStatus": {"latestTrainingStatusData": {"3412345": {"calendarDate": "2026-10-15", "trainingStatus": 4,
+  "trainingStatusFeedbackPhrase": "PRODUCTIVE_1", "primaryTrainingDevice": true,
+  "acuteTrainingLoadDTO": {"dailyTrainingLoadAcute": 620, "dailyTrainingLoadChronic": 563, "dailyAcuteChronicWorkloadRatio": 1.1}}}}}

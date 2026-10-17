@@ -1,0 +1,11 @@
+[
+  {"activityId": 20000000001, "activityName": "Track 6x800", "startTimeLocal": "2026-10-14 06:30:00", "startTimeGMT": "2026-10-14 10:30:00",
+   "activityType": {"typeId": 87, "typeKey": "track_running"}, "distance": 9656.06, "duration": 2700.0, "movingDuration": 2650.0,
+   "averageHR": 155.0, "maxHR": 182.0, "averageRunningCadenceInStepsPerMinute": 176.4, "elevationGain": 3.0,
+   "aerobicTrainingEffect": 3.6, "anaerobicTrainingEffect": 2.8, "activityTrainingLoad": 142.0, "vO2MaxValue": 54.0,
+   "hrTimeInZone_1": 120.0, "hrTimeInZone_2": 900.0, "hrTimeInZone_3": 600.0, "hrTimeInZone_4": 400.0, "hrTimeInZone_5": 100.0},
+  {"activityId": 20000000002, "activityName": "Spin", "startTimeLocal": "2026-10-15 18:00:00", "startTimeGMT": "2026-10-15 22:00:00",
+   "activityType": {"typeId": 2, "typeKey": "cycling"}, "distance": 20000.0, "duration": 3600.0},
+  {"activityId": 20000000003, "activityName": "Easy", "startTimeLocal": "2026-10-16 07:00:00", "startTimeGMT": "2026-10-16 11:00:00",
+   "activityType": {"typeId": 1, "typeKey": "running"}, "distance": 8046.72, "duration": 2580.0, "averageHR": 141.0}
+]

@@ -1,0 +1,5 @@
+{"activityId": 20000000001, "lapDTOs": [
+  {"lapIndex": 1, "distance": 3218.69, "duration": 1000.0, "averageHR": 140.0, "averageRunCadence": 170.0, "elevationGain": 1.0},
+  {"lapIndex": 2, "distance": 4828.03, "duration": 1200.0, "averageHR": 168.0, "averageRunCadence": 184.0, "elevationGain": 1.0},
+  {"lapIndex": 3, "distance": 1609.34, "duration": 500.0, "averageHR": 145.0, "averageRunCadence": 172.0, "elevationGain": 1.0}
+]}

@@ -1,0 +1,7 @@
+backend/.venv
+backend/.env
+backend/dev.db
+backend/tests
+frontend/node_modules
+frontend/dist
+.claude

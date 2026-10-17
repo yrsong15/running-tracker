@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/* Duke palette: Navy #012169, Royal #00539B, Shale #0577B1, Hatteras #E2E6ED,
+   Persimmon #E89923, Copper #C84E00. Chart series validated for CVD separation. */
+:root {
+  color-scheme: light;
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #e2e6ed;
+  --border: #d3d9e3;
+  --ink: #0f1b33;
+  --ink-2: #4a5872;
+  --ink-3: #6b7890;
+  --nav: #012169;
+  --nav-ink: #ffffff;
+  --primary: #00539b;
+  --primary-ink: #ffffff;
+  --primary-soft: #dbe7f5;
+  --link: #0577b1;
+  --warn: #b25f00;
+  --warn-soft: #fdf0dc;
+  --over: #c84e00;
+  --over-soft: #fbe3d6;
+  --good: #1f7a3a;
+  --series-1: #00539b;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --grid: #e3e7ee;
+  --safe-band: #1baf7a22;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0a1226;
+    --surface: #0f1a33;
+    --surface-2: #17244a;
+    --border: #24345e;
+    --ink: #eef2f9;
+    --ink-2: #b3bfd6;
+    --ink-3: #8a97b1;
+    --nav: #010f33;
+    --nav-ink: #ffffff;
+    --primary: #3987e5;
+    --primary-ink: #ffffff;
+    --primary-soft: #16305e;
+    --link: #6da7ec;
+    --warn: #f0a040;
+    --warn-soft: #3a2a10;
+    --over: #f07a45;
+    --over-soft: #3d1d10;
+    --good: #4cc27a;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --grid: #1e2c52;
+    --safe-band: #199e7033;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a1226;
+  --surface: #0f1a33;
+  --surface-2: #17244a;
+  --border: #24345e;
+  --ink: #eef2f9;
+  --ink-2: #b3bfd6;
+  --ink-3: #8a97b1;
+  --nav: #010f33;
+  --nav-ink: #ffffff;
+  --primary: #3987e5;
+  --primary-ink: #ffffff;
+  --primary-soft: #16305e;
+  --link: #6da7ec;
+  --warn: #f0a040;
+  --warn-soft: #3a2a10;
+  --over: #f07a45;
+  --over-soft: #3d1d10;
+  --good: #4cc27a;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --grid: #1e2c52;
+  --safe-band: #199e7033;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-nav: var(--nav);
+  --color-nav-ink: var(--nav-ink);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
+  --color-link: var(--link);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-over: var(--over);
+  --color-over-soft: var(--over-soft);
+  --color-good: var(--good);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Recharts: no focus ring after a mouse click on the chart; keep it for keyboard users. */
+.recharts-wrapper:focus:not(:focus-visible),
+.recharts-wrapper :focus:not(:focus-visible) {
+  outline: none;
+}
