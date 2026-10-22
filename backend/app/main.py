@@ -6,7 +6,7 @@ from app.db import get_session
 from app.routers import auth, metrics, runs, shoes, summary, sync
 from app.services.records import compute_records
 
-app = FastAPI(title="Running Tracker", docs_url="/api/docs", openapi_url="/api/openapi.json")
+app = FastAPI(title="Unicorn", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 public = APIRouter(prefix="/api")
 public.include_router(auth.router)

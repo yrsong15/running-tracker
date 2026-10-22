@@ -17,7 +17,7 @@ export default function Login() {
       >
         <div className="mb-5 flex items-center gap-2.5">
           <img src="/favicon.svg" alt="" className="h-9 w-9 rounded-lg" />
-          <h1 className="text-xl font-semibold text-ink">Running Tracker</h1>
+          <h1 className="text-xl font-semibold text-ink">Unicorn</h1>
         </div>
         <label className="mb-1 block text-sm font-medium text-ink-2" htmlFor="password">
           Password

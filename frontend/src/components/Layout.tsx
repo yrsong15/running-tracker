@@ -65,7 +65,7 @@ export default function Layout() {
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
           <NavLink to="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <img src="/favicon.svg" alt="" className="h-7 w-7 rounded-md ring-1 ring-white/30" />
-            <span>Running Tracker</span>
+            <span>Unicorn</span>
           </NavLink>
           <nav className="ml-4 hidden items-center gap-0.5 lg:flex">
             {NAV.map((n) => (

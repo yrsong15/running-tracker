@@ -1,6 +1,6 @@
-# running-tracker
+# unicorn
 
-A personal running tracker that pulls runs and fitness data from Garmin Connect. It has:
+Unicorn is a personal running tracker that pulls runs and fitness data from Garmin Connect. It has:
 
 - **Weekly mileage:** Monday–Sunday weeks over 3M / 6M / 1Y / YTD / All.
 - **Shoe mileage:** one run can be split across several shoes (e.g. warmup in one, track reps in another).

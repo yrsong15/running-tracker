@@ -9,8 +9,8 @@ from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
 
 from app.config import APP_PASSWORD_HASH, IS_PRODUCTION, ON_VERCEL, SESSION_MAX_AGE_S, SESSION_SECRET
 
-COOKIE = "rt_session"
-_signer = TimestampSigner(SESSION_SECRET, salt="running-tracker-session")
+COOKIE = "unicorn_session"
+_signer = TimestampSigner(SESSION_SECRET, salt="unicorn-session")
 _SCRYPT = {"n": 2**14, "r": 8, "p": 1}
 
 
