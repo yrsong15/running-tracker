@@ -1,4 +1,6 @@
 export type Category = 'road' | 'treadmill' | 'track' | 'trail'
+export type RideCategory = 'road' | 'indoor' | 'mountain' | 'gravel'
+export type Sport = 'run' | 'ride'
 export type RangeKey = '3m' | '6m' | '1y' | 'ytd' | 'all'
 
 export interface ShoeSegment {
@@ -16,10 +18,12 @@ export interface RunSummary {
   name: string
   start_local: string
   local_date: string
-  category: Category
+  sport: Sport
+  category: Category | RideCategory
   miles: number
   duration_s: number
   pace_s_per_mile: number | null
+  speed_mph: number | null
   avg_hr: number | null
   training_load: number | null
   shoes: ShoeSegment[]
@@ -31,6 +35,7 @@ export interface Lap {
   miles: number
   duration_s: number
   pace_s_per_mile: number | null
+  speed_mph: number | null
   avg_hr: number | null
   avg_cadence: number | null
   elev_gain_ft: number | null
@@ -68,11 +73,17 @@ export interface Shoe {
 export interface Week {
   week_start: string
   week_end: string
-  miles: number
+  run_miles: number
+  /** Ride training load converted at the trailing-year load per run mile. */
+  ride_equiv_miles: number
+  total_miles: number
   runs: number
+  rides: number
   longest_miles: number
   rolling_avg: number
+  rolling_avg_total: number
   run_ids: number[]
+  ride_ids: number[]
 }
 
 export interface DailyMetrics {
@@ -101,6 +112,7 @@ export interface Dashboard {
   last_week: Week
   shoe_alerts: Shoe[]
   today: DailyMetrics | null
+  load_per_run_mile: number | null
 }
 
 export interface SyncStatus {
@@ -127,7 +139,7 @@ export type TrainingKey =
   | 'hrv_last_night' | 'hrv_weekly_avg' | 'hrv_status' | 'training_status'
 
 export interface TrainingResponse extends MetricsResponse<TrainingKey> {
-  run_load: { day: string; load: number }[]
+  daily_load: { day: string; run: number; ride: number; total: number }[]
 }
 
 export interface Records {

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import type { RunSummary } from '../api/types'
-import { CATEGORY_LABELS, duration, longDate, mi, pace } from '../lib/format'
+import { activityLabel, duration, longDate, mi, paceOrSpeed } from '../lib/format'
 import { Badge, Empty } from './ui'
 
 export function ShoeChips({ run }: { run: RunSummary }) {
@@ -17,8 +17,8 @@ export function ShoeChips({ run }: { run: RunSummary }) {
   )
 }
 
-export function RunList({ runs }: { runs: RunSummary[] }) {
-  if (!runs.length) return <Empty>No runs here.</Empty>
+export function RunList({ runs, empty = 'No runs here.' }: { runs: RunSummary[]; empty?: string }) {
+  if (!runs.length) return <Empty>{empty}</Empty>
   return (
     <ul className="divide-y divide-border">
       {runs.map((r) => (
@@ -27,16 +27,16 @@ export function RunList({ runs }: { runs: RunSummary[] }) {
             <div className="min-w-0 sm:w-56">
               <div className="truncate font-medium text-ink">{r.name}</div>
               <div className="text-xs text-ink-3">
-                {longDate(r.local_date)} · {CATEGORY_LABELS[r.category]}
+                {longDate(r.local_date)} · {activityLabel(r)}
               </div>
             </div>
             <div className="tabular flex gap-4 text-sm text-ink-2 sm:w-64">
               <span className="w-16 font-semibold text-ink">{mi(r.miles, 2)} mi</span>
               <span className="w-16">{duration(r.duration_s)}</span>
-              <span>{pace(r.pace_s_per_mile)}</span>
+              <span>{paceOrSpeed(r)}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <ShoeChips run={r} />
+              {r.sport === 'ride' ? <Badge>Ride</Badge> : <ShoeChips run={r} />}
             </div>
           </Link>
         </li>

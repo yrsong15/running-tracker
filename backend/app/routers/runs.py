@@ -10,6 +10,7 @@ from app.schemas import RunDetailOut, RunSummaryOut, run_detail, run_summary
 from app.services.shoes import SegmentError, SegmentInput, replace_segments
 
 router = APIRouter(prefix="/runs", tags=["runs"])
+SPORTS = {"run", "ride", "all"}
 
 
 def _shoes(session: Session) -> dict[int, Shoe]:
@@ -35,11 +36,16 @@ def list_runs(
     end: date | None = None,
     shoe_id: int | None = None,
     ids: str | None = None,
+    sport: str = "run",
     limit: int = 50,
     offset: int = 0,
     session: Session = Depends(get_session),
 ):
+    if sport not in SPORTS:
+        raise HTTPException(422, f"Sport must be one of {sorted(SPORTS)}")
     query = select(Run)
+    if sport != "all":
+        query = query.where(Run.sport == sport)
     if start:
         query = query.where(Run.local_date >= start)
     if end:

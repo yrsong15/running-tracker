@@ -63,13 +63,15 @@ const RANGE_OPTIONS: { key: RangeKey; label: string }[] = [
   { key: 'all', label: 'All' },
 ]
 
-export function RangePicker({ value, onChange, options = RANGE_OPTIONS }: {
-  value: RangeKey
-  onChange: (r: RangeKey) => void
-  options?: { key: RangeKey; label: string }[]
+/** Segmented single-choice control (date ranges, view modes). */
+export function Segmented<K extends string>({ value, onChange, options, label }: {
+  value: K
+  onChange: (k: K) => void
+  options: { key: K; label: string }[]
+  label: string
 }) {
   return (
-    <div role="radiogroup" aria-label="Date range" className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5">
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5">
       {options.map((o) => (
         <button
           key={o.key}
@@ -85,6 +87,33 @@ export function RangePicker({ value, onChange, options = RANGE_OPTIONS }: {
         </button>
       ))}
     </div>
+  )
+}
+
+export function RangePicker({ value, onChange, options = RANGE_OPTIONS }: {
+  value: RangeKey
+  onChange: (r: RangeKey) => void
+  options?: { key: RangeKey; label: string }[]
+}) {
+  return <Segmented label="Date range" value={value} onChange={onChange} options={options} />
+}
+
+export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="inline-flex items-center gap-2 text-sm text-ink-2 hover:text-ink"
+    >
+      <span className={`relative inline-block h-5 w-9 shrink-0 rounded-full transition ${checked ? 'bg-primary' : 'bg-surface-2 ring-1 ring-border'}`}>
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${checked ? 'left-[1.125rem]' : 'left-0.5'}`}
+        />
+      </span>
+      {label}
+    </button>
   )
 }
 

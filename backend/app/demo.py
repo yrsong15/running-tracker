@@ -110,6 +110,47 @@ def seed(days: int = 460, rng_seed: int = 7) -> None:
                 s.add(RunShoe(run_id=run.id, shoe_id=shoe_for_easy.id, distance_m=run.distance_m))
             fitness += load
 
+        # Easy rides, mostly in the last year: Wednesday evenings and some Saturdays.
+        for offset in range(days + 1):
+            day = start + timedelta(days=offset)
+            progress = offset / days
+            if progress < 0.2 or day.weekday() not in (2, 5) or rng.random() < (0.35 if day.weekday() == 2 else 0.6):
+                continue
+            indoor = rng.random() < 0.3
+            ride_mi = rng.uniform(10, 16) if indoor else rng.uniform(14, 32)
+            mph = rng.uniform(14, 16.5)
+            seconds = ride_mi / mph * 3600
+            activity_id += 1
+            start_local = datetime.combine(day, datetime.min.time()) + timedelta(hours=17, minutes=rng.randint(0, 60))
+            ride = Run(
+                garmin_activity_id=activity_id,
+                start_local=start_local,
+                start_utc=start_local + timedelta(hours=4),
+                local_date=day,
+                name="Indoor Cycling" if indoor else "Easy Ride",
+                type_key="indoor_cycling" if indoor else "road_biking",
+                sport="ride",
+                category="indoor" if indoor else "road",
+                distance_m=ride_mi * METERS_PER_MILE,
+                duration_s=seconds,
+                moving_s=seconds * 0.97,
+                avg_hr=128 + rng.uniform(-6, 6),
+                max_hr=150 + rng.uniform(-6, 8),
+                avg_cadence=86 + rng.uniform(-4, 4),
+                elev_gain_m=0 if indoor else ride_mi * rng.uniform(4, 12),
+                aerobic_te=round(rng.uniform(1.8, 3.0), 1),
+                anaerobic_te=round(rng.uniform(0.0, 0.6), 1),
+                # Some rides (e.g. a phone-recorded commute) come in without a training load.
+                training_load=None if rng.random() < 0.1 else round(seconds / 60 * rng.uniform(0.7, 1.0)),
+                hr_zones=[seconds * f for f in (0.2, 0.6, 0.18, 0.02, 0.0)],
+            )
+            s.add(ride)
+            s.flush()
+            whole = int(ride_mi // 5)
+            for i in range(whole):
+                s.add(Lap(run_id=ride.id, idx=i + 1, distance_m=5 * METERS_PER_MILE, duration_s=5 / mph * 3600,
+                          avg_hr=ride.avg_hr, avg_cadence=ride.avg_cadence, elev_gain_m=0))
+
         acute = chronic = 300.0
         for offset in range(days + 1):
             day = start + timedelta(days=offset)

@@ -5,7 +5,17 @@ from app.models import METERS_PER_MILE, Lap, Run, Shoe
 _next_id = [1000]
 
 
-def make_run(session, day: date, miles: float, *, hour: int = 7, category: str = "road", laps: list[float] | None = None) -> Run:
+def make_run(
+    session,
+    day: date,
+    miles: float,
+    *,
+    hour: int = 7,
+    category: str = "road",
+    laps: list[float] | None = None,
+    sport: str = "run",
+    load: float | None = None,
+) -> Run:
     _next_id[0] += 1
     start = datetime.combine(day, time(hour))
     run = Run(
@@ -13,8 +23,10 @@ def make_run(session, day: date, miles: float, *, hour: int = 7, category: str =
         start_local=start,
         start_utc=start,
         local_date=day,
-        name="Run",
+        name="Run" if sport == "run" else "Ride",
+        sport=sport,
         category=category,
+        training_load=load,
         distance_m=miles * METERS_PER_MILE,
         duration_s=miles * 480,
     )
@@ -32,3 +44,7 @@ def make_shoe(session, name: str = "Shoe", **kwargs) -> Shoe:
     session.commit()
     session.refresh(shoe)
     return shoe
+
+
+def make_ride(session, day: date, miles: float, load: float | None, **kwargs) -> Run:
+    return make_run(session, day, miles, sport="ride", load=load, **kwargs)

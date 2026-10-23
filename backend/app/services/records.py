@@ -29,7 +29,7 @@ def weekly_streaks(week_miles: list[tuple[date, float]], today: date) -> tuple[i
 
 def compute_records(session: Session, today: date | None = None) -> dict:
     today = today or date.today()
-    runs = list(session.exec(select(Run).order_by(Run.local_date)))
+    runs = list(session.exec(select(Run).where(Run.sport == "run").order_by(Run.local_date)))
     garmin_prs = [
         {
             "type_id": pr.type_id,

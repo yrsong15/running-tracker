@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api, patch, post, put } from './client'
 import type {
-  Dashboard, FitnessKey, MetricsResponse, RangeKey, Records, RunDetail, RunSummary, Shoe, SyncStatus,
+  Dashboard, FitnessKey, MetricsResponse, RangeKey, Records, RunDetail, RunSummary, Shoe, Sport, SyncStatus,
   TrainingResponse, Week,
 } from './types'
 
@@ -24,13 +24,21 @@ export function useLogout() {
 export const useWeekly = (range: RangeKey) =>
   useQuery({
     queryKey: ['weekly', range],
-    queryFn: () => api<{ weeks: Week[] }>(`/summary/weekly?range=${range}`),
+    queryFn: () => api<{ weeks: Week[]; load_per_run_mile: number | null }>(`/summary/weekly?range=${range}`),
     placeholderData: (prev) => prev,
   })
 
 export const useDashboard = () => useQuery({ queryKey: ['dashboard'], queryFn: () => api<Dashboard>('/summary/dashboard') })
 
-export interface RunFilters { start?: string; end?: string; shoe_id?: number; ids?: number[]; limit?: number; offset?: number }
+export interface RunFilters {
+  start?: string
+  end?: string
+  shoe_id?: number
+  ids?: number[]
+  sport?: Sport | 'all'
+  limit?: number
+  offset?: number
+}
 
 export function useRuns(filters: RunFilters, enabled = true) {
   const params = new URLSearchParams()

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import {
-  Bar, CartesianGrid, Cell, ComposedChart, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, LineChart, Rectangle, ReferenceArea, ResponsiveContainer, Tooltip,
+  XAxis, YAxis,
 } from 'recharts'
 
 import type { Week } from '../api/types'
@@ -46,24 +47,32 @@ function tickFormatter(weeks: Week[]) {
   return (iso: string) => (long ? monthYear(iso) : shortDate(iso))
 }
 
-export function WeeklyMileageChart({ weeks, selected, onSelect }: {
+export const RUN_COLOR = 'var(--series-1)'
+export const BIKE_COLOR = 'var(--series-3)'
+
+export function WeeklyMileageChart({ weeks, includeBikes = false, selected, onSelect }: {
   weeks: Week[]
+  includeBikes?: boolean
   selected?: string | null
   onSelect?: (week: Week) => void
 }) {
+  const dense = weeks.length > 40
+  const select = (d: unknown) => onSelect?.((d as { payload: Week }).payload)
+  const dim = (w: Week) => (selected && selected !== w.week_start ? 0.4 : 1)
   return (
     <div>
       <div className="mb-2">
         <Legend
           items={[
-            { label: 'Weekly miles', color: 'var(--series-1)' },
-            { label: '4-week average', color: 'var(--series-2)', dashed: true },
+            { label: includeBikes ? 'Run miles' : 'Weekly miles', color: RUN_COLOR },
+            ...(includeBikes ? [{ label: 'Bike (run-equivalent)', color: BIKE_COLOR }] : []),
+            { label: includeBikes ? '4-week average (incl. bike)' : '4-week average', color: 'var(--series-2)', dashed: true },
           ]}
         />
       </div>
       <div className="h-64 sm:h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={weeks} margin={{ top: 8, right: 4, bottom: 0, left: -18 }} barCategoryGap={weeks.length > 40 ? 1 : '18%'}>
+          <ComposedChart data={weeks} margin={{ top: 8, right: 4, bottom: 0, left: -18 }} barCategoryGap={dense ? 1 : '18%'}>
             <CartesianGrid vertical={false} stroke="var(--grid)" />
             <XAxis
               dataKey="week_start"
@@ -79,34 +88,64 @@ export function WeeklyMileageChart({ weeks, selected, onSelect }: {
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null
                 const w = payload[0].payload as Week
+                const rows = includeBikes
+                  ? [
+                      { label: 'Run miles', value: mi(w.run_miles), color: RUN_COLOR },
+                      { label: 'Bike equiv.', value: mi(w.ride_equiv_miles), color: BIKE_COLOR },
+                      { label: 'Total', value: mi(w.total_miles) },
+                      { label: '4-wk avg', value: mi(w.rolling_avg_total), color: 'var(--series-2)' },
+                      { label: 'Runs · rides', value: `${w.runs} · ${w.rides}` },
+                    ]
+                  : [
+                      { label: 'Miles', value: mi(w.run_miles), color: RUN_COLOR },
+                      { label: '4-wk avg', value: mi(w.rolling_avg), color: 'var(--series-2)' },
+                      { label: 'Runs', value: w.runs },
+                    ]
                 return (
                   <ChartTooltip
                     title={weekRange(w.week_start, w.week_end)}
-                    rows={[
-                      { label: 'Miles', value: mi(w.miles), color: 'var(--series-1)' },
-                      { label: '4-wk avg', value: mi(w.rolling_avg), color: 'var(--series-2)' },
-                      { label: 'Runs', value: w.runs },
-                      { label: 'Longest', value: `${mi(w.longest_miles)} mi` },
-                    ]}
+                    rows={[...rows, { label: 'Longest', value: `${mi(w.longest_miles)} mi` }]}
                   />
                 )
               }}
             />
             <Bar
-              dataKey="miles"
-              fill="var(--series-1)"
-              radius={[4, 4, 0, 0]}
+              dataKey="run_miles"
+              stackId="miles"
+              fill={RUN_COLOR}
               stroke="var(--surface)"
-              strokeWidth={weeks.length > 40 ? 0 : 1}
+              strokeWidth={dense ? 0 : 1}
               cursor={onSelect ? 'pointer' : undefined}
-              onClick={(d) => onSelect?.((d as unknown as { payload: Week }).payload)}
+              onClick={select}
+              // Only the top segment of a stack gets rounded corners.
+              shape={(props: unknown) => {
+                const p = props as { payload: Week } & Record<string, unknown>
+                const top = !includeBikes || p.payload.ride_equiv_miles <= 0
+                return <Rectangle {...p} radius={top ? [4, 4, 0, 0] : 0} />
+              }}
             >
               {weeks.map((w) => (
-                <Cell key={w.week_start} fillOpacity={selected && selected !== w.week_start ? 0.4 : 1} />
+                <Cell key={w.week_start} fillOpacity={dim(w)} />
               ))}
             </Bar>
+            {includeBikes && (
+              <Bar
+                dataKey="ride_equiv_miles"
+                stackId="miles"
+                fill={BIKE_COLOR}
+                radius={[4, 4, 0, 0]}
+                stroke="var(--surface)"
+                strokeWidth={dense ? 0 : 1}
+                cursor={onSelect ? 'pointer' : undefined}
+                onClick={select}
+              >
+                {weeks.map((w) => (
+                  <Cell key={w.week_start} fillOpacity={dim(w)} />
+                ))}
+              </Bar>
+            )}
             <Line
-              dataKey="rolling_avg"
+              dataKey={includeBikes ? 'rolling_avg_total' : 'rolling_avg'}
               stroke="var(--series-2)"
               strokeWidth={2}
               strokeDasharray="5 3"
@@ -115,6 +154,75 @@ export function WeeklyMileageChart({ weeks, selected, onSelect }: {
               isAnimationActive={false}
             />
           </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
+export interface DailyLoad { day: string; run: number; ride: number; total: number }
+
+/** Daily Garmin training load, either one total bar or stacked run / ride. */
+export function DailyLoadChart({ data, split }: { data: DailyLoad[]; split: boolean }) {
+  const long = data.length > 120
+  return (
+    <div>
+      {split && (
+        <div className="mb-2">
+          <Legend items={[{ label: 'Run', color: RUN_COLOR }, { label: 'Ride', color: BIKE_COLOR }]} />
+        </div>
+      )}
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap={data.length > 60 ? 0 : '15%'}>
+            <CartesianGrid vertical={false} stroke="var(--grid)" />
+            <XAxis
+              dataKey="day"
+              tick={axisTick}
+              tickLine={false}
+              axisLine={{ stroke: 'var(--grid)' }}
+              tickFormatter={(d: string) => (long ? monthYear(d) : shortDate(d))}
+              minTickGap={32}
+            />
+            <YAxis tick={axisTick} tickLine={false} axisLine={false} allowDecimals={false} width={44} />
+            <Tooltip
+              cursor={{ fill: 'var(--surface-2)', opacity: 0.6 }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null
+                const d = payload[0].payload as DailyLoad
+                return (
+                  <ChartTooltip
+                    title={fullDate(d.day)}
+                    rows={[
+                      ...(split
+                        ? [
+                            { label: 'Run', value: Math.round(d.run), color: RUN_COLOR },
+                            { label: 'Ride', value: Math.round(d.ride), color: BIKE_COLOR },
+                          ]
+                        : []),
+                      { label: 'Total load', value: Math.round(d.total), color: split ? undefined : RUN_COLOR },
+                    ]}
+                  />
+                )
+              }}
+            />
+            {split ? (
+              <>
+                <Bar
+                  dataKey="run"
+                  stackId="load"
+                  fill={RUN_COLOR}
+                  shape={(props: unknown) => {
+                    const p = props as { payload: DailyLoad } & Record<string, unknown>
+                    return <Rectangle {...p} radius={p.payload.ride > 0 ? 0 : [3, 3, 0, 0]} />
+                  }}
+                />
+                <Bar dataKey="ride" stackId="load" fill={BIKE_COLOR} radius={[3, 3, 0, 0]} />
+              </>
+            ) : (
+              <Bar dataKey="total" fill={RUN_COLOR} radius={[3, 3, 0, 0]} />
+            )}
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>

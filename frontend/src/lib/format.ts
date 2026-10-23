@@ -46,3 +46,33 @@ export const titleCase = (s: string | null | undefined) =>
   s ? s.replace(/_\d+$/, '').toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '–'
 
 export const CATEGORY_LABELS = { road: 'Road', treadmill: 'Treadmill', track: 'Track', trail: 'Trail' } as const
+export const RIDE_CATEGORY_LABELS = { road: 'Road ride', indoor: 'Indoor ride', mountain: 'Mountain bike', gravel: 'Gravel ride' } as const
+
+export function activityLabel(a: { sport: 'run' | 'ride'; category: string }): string {
+  const labels: Record<string, string> = a.sport === 'ride' ? RIDE_CATEGORY_LABELS : CATEGORY_LABELS
+  return labels[a.category] ?? titleCase(a.category)
+}
+
+export const mph = (speed: number | null | undefined) => (speed ? `${speed.toFixed(1)} mph` : '–')
+
+/** Pace for runs, speed for rides. */
+export const paceOrSpeed = (a: { sport: 'run' | 'ride'; pace_s_per_mile: number | null; speed_mph: number | null }) =>
+  a.sport === 'ride' ? mph(a.speed_mph) : pace(a.pace_s_per_mile)
+
+/** Read and write a small per-browser preference; storage can be unavailable (private mode). */
+export function loadPref<T extends string>(key: string, fallback: T, allowed: readonly T[]): T {
+  try {
+    const v = localStorage.getItem(key)
+    return v !== null && (allowed as readonly string[]).includes(v) ? (v as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+export function savePref(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Not persisted; the choice still applies for this visit.
+  }
+}

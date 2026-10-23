@@ -31,9 +31,9 @@ def test_weekly_and_dashboard(logged_in, session):
     make_run(session, today, 5)
     make_run(session, today - timedelta(days=7), 8)
     weekly = logged_in.get("/api/summary/weekly?range=3m").json()["weeks"]
-    assert len(weekly) == 13 and round(weekly[-1]["miles"]) == 5
+    assert len(weekly) == 13 and round(weekly[-1]["run_miles"]) == 5
     dash = logged_in.get("/api/summary/dashboard").json()
-    assert round(dash["this_week"]["miles"]) == 5 and round(dash["last_week"]["miles"]) == 8
+    assert round(dash["this_week"]["run_miles"]) == 5 and round(dash["last_week"]["run_miles"]) == 8
     assert logged_in.get("/api/summary/weekly?range=bogus").status_code == 422
 
 

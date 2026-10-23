@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
@@ -41,13 +41,17 @@ def training(range: str = "3m", session: Session = Depends(get_session)):  # noq
     series = _series(session, range, TRAINING)
     latest = {f: next((d[f] for d in reversed(series) if d[f] is not None), None) for f in TRAINING}
     first = series[0]["day"] if series else date.today()
-    loads = session.exec(select(Run.local_date, Run.training_load).where(Run.local_date >= first))
-    daily_load: dict[date, float] = {}
-    for day, load in loads:
-        daily_load[day] = daily_load.get(day, 0.0) + (load or 0.0)
-    return {
-        "range": range,
-        "series": series,
-        "latest": latest,
-        "run_load": [{"day": d, "load": round(v, 1)} for d, v in sorted(daily_load.items())],
-    }
+    return {"range": range, "series": series, "latest": latest, "daily_load": daily_load(session, first, date.today())}
+
+
+def daily_load(session: Session, start: date, end: date) -> list[dict]:
+    """Zero-filled daily Garmin training load from `start` through `end`, split by sport."""
+    days = {start + timedelta(days=i): {"run": 0.0, "ride": 0.0} for i in range((end - start).days + 1)}
+    rows = session.exec(select(Run.local_date, Run.sport, Run.training_load).where(Run.local_date >= start, Run.local_date <= end))
+    for day, sport, load in rows:
+        if sport in days[day]:
+            days[day][sport] += load or 0.0
+    return [
+        {"day": d, "run": round(v["run"], 1), "ride": round(v["ride"], 1), "total": round(v["run"] + v["ride"], 1)}
+        for d, v in days.items()
+    ]

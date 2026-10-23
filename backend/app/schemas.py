@@ -17,6 +17,12 @@ def pace(distance_m: float, seconds: float | None) -> float | None:
     return seconds / (distance_m / METERS_PER_MILE)
 
 
+def speed_mph(distance_m: float, seconds: float | None) -> float | None:
+    if not distance_m or not seconds:
+        return None
+    return distance_m / METERS_PER_MILE / (seconds / 3600)
+
+
 class ShoeSegmentOut(BaseModel):
     shoe_id: int
     shoe_name: str
@@ -32,10 +38,12 @@ class RunSummaryOut(BaseModel):
     name: str
     start_local: datetime
     local_date: date
+    sport: str  # run | ride
     category: str
     miles: float
     duration_s: float
     pace_s_per_mile: float | None
+    speed_mph: float | None
     avg_hr: float | None
     training_load: float | None
     shoes: list[ShoeSegmentOut]
@@ -47,6 +55,7 @@ class LapOut(BaseModel):
     miles: float
     duration_s: float
     pace_s_per_mile: float | None
+    speed_mph: float | None
     avg_hr: float | None
     avg_cadence: float | None
     elev_gain_ft: float | None
@@ -101,10 +110,12 @@ def run_summary(run: Run, segments: list[RunShoe], shoes: dict[int, Shoe]) -> di
         "name": run.name,
         "start_local": run.start_local,
         "local_date": run.local_date,
+        "sport": run.sport,
         "category": run.category,
         "miles": run.distance_m / METERS_PER_MILE,
         "duration_s": run.duration_s,
         "pace_s_per_mile": pace(run.distance_m, run.moving_s or run.duration_s),
+        "speed_mph": speed_mph(run.distance_m, run.moving_s or run.duration_s),
         "avg_hr": run.avg_hr,
         "training_load": run.training_load,
         "shoes": [segment_out(s, shoes) for s in segments],
@@ -130,6 +141,7 @@ def run_detail(run: Run, segments: list[RunShoe], shoes: dict[int, Shoe], laps: 
                 miles=lap.distance_m / METERS_PER_MILE,
                 duration_s=lap.duration_s,
                 pace_s_per_mile=pace(lap.distance_m, lap.duration_s),
+                speed_mph=speed_mph(lap.distance_m, lap.duration_s),
                 avg_hr=lap.avg_hr,
                 avg_cadence=lap.avg_cadence,
                 elev_gain_ft=feet(lap.elev_gain_m),

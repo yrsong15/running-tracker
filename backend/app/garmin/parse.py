@@ -21,6 +21,15 @@ RUN_CATEGORIES = {
     "obstacle_run": "trail",
 }
 
+RIDE_CATEGORIES = {
+    "cycling": "road",
+    "road_biking": "road",
+    "indoor_cycling": "indoor",
+    "virtual_ride": "indoor",
+    "mountain_biking": "mountain",
+    "gravel_cycling": "gravel",
+}
+
 
 def dig(obj: Any, *path: str | int) -> Any:
     for key in path:
@@ -52,28 +61,40 @@ def run_category(activity: dict) -> str | None:
     return RUN_CATEGORIES.get(dig(activity, "activityType", "typeKey") or "")
 
 
+def sport_and_category(activity: dict) -> tuple[str, str] | None:
+    type_key = dig(activity, "activityType", "typeKey") or ""
+    if type_key in RUN_CATEGORIES:
+        return "run", RUN_CATEGORIES[type_key]
+    if type_key in RIDE_CATEGORIES:
+        return "ride", RIDE_CATEGORIES[type_key]
+    return None
+
+
 def parse_activity(activity: dict) -> dict | None:
-    """Fields for a Run row, or None if this activity isn't a run."""
-    category = run_category(activity)
+    """Fields for a Run row (a run or a ride), or None for any other activity."""
+    kind = sport_and_category(activity)
     start_local = _dt(activity.get("startTimeLocal"))
     activity_id = activity.get("activityId")
-    if category is None or start_local is None or activity_id is None:
+    if kind is None or start_local is None or activity_id is None:
         return None
+    sport, category = kind
+    cadence = "averageRunningCadenceInStepsPerMinute" if sport == "run" else "averageBikingCadenceInRevPerMinute"
     zones = [_num(activity.get(f"hrTimeInZone_{i}")) for i in range(1, 6)]
     return {
         "garmin_activity_id": int(activity_id),
         "start_local": start_local,
         "start_utc": _dt(activity.get("startTimeGMT")) or start_local,
         "local_date": start_local.date(),
-        "name": activity.get("activityName") or "Run",
+        "name": activity.get("activityName") or ("Run" if sport == "run" else "Ride"),
         "type_key": dig(activity, "activityType", "typeKey"),
+        "sport": sport,
         "category": category,
         "distance_m": _num(activity.get("distance")) or 0.0,
         "duration_s": _num(activity.get("duration")) or 0.0,
         "moving_s": _num(activity.get("movingDuration")),
         "avg_hr": _num(activity.get("averageHR")),
         "max_hr": _num(activity.get("maxHR")),
-        "avg_cadence": _num(activity.get("averageRunningCadenceInStepsPerMinute")),
+        "avg_cadence": _num(activity.get(cadence)),
         "elev_gain_m": _num(activity.get("elevationGain")),
         "aerobic_te": _num(activity.get("aerobicTrainingEffect")),
         "anaerobic_te": _num(activity.get("anaerobicTrainingEffect")),

@@ -2,9 +2,12 @@ import { useState } from 'react'
 
 import { useTraining } from '../api/hooks'
 import type { RangeKey } from '../api/types'
-import { TrendChart } from '../components/charts'
-import { Badge, Card, Empty, ErrorNote, Loading, PageHeader, RangePicker, Stat } from '../components/ui'
-import { shortDate, titleCase } from '../lib/format'
+import { DailyLoadChart, TrendChart } from '../components/charts'
+import { Badge, Card, Empty, ErrorNote, Loading, PageHeader, RangePicker, Segmented, Stat } from '../components/ui'
+import { loadPref, savePref, shortDate, titleCase } from '../lib/format'
+
+type LoadView = 'combined' | 'split'
+const LOAD_VIEW_PREF = 'unicorn.loadView'
 
 function acwrNote(acwr: number | null | undefined) {
   if (acwr === null || acwr === undefined) return { text: 'No data', tone: undefined }
@@ -16,10 +19,16 @@ function acwrNote(acwr: number | null | undefined) {
 
 export default function Training() {
   const [range, setRange] = useState<RangeKey>('3m')
+  const [view, setView] = useState<LoadView>(() => loadPref(LOAD_VIEW_PREF, 'combined', ['combined', 'split'] as const))
   const q = useTraining(range)
   const series = q.data?.series ?? []
   const latest = q.data?.latest
   const note = acwrNote(latest?.acwr)
+  const dailyLoad = q.data?.daily_load ?? []
+  const changeView = (v: LoadView) => {
+    setView(v)
+    savePref(LOAD_VIEW_PREF, v)
+  }
 
   // Collapse the daily status into runs of the same status for a compact timeline.
   const timeline: { status: string; from: string; to: string }[] = []
@@ -49,15 +58,35 @@ export default function Training() {
             <Stat label="HRV weekly avg" value={latest.hrv_weekly_avg ? `${latest.hrv_weekly_avg} ms` : '–'} sub={titleCase(latest.hrv_status)} />
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <Card title="Acute vs. chronic load" className="lg:col-span-2">
-              <TrendChart
-                data={series}
-                height={260}
-                series={[
-                  { key: 'acute_load', label: 'Acute (7-day)', color: 'var(--series-1)', format: (v) => String(Math.round(v)) },
-                  { key: 'chronic_load', label: 'Chronic (28-day)', color: 'var(--series-2)', dashed: true, format: (v) => String(Math.round(v)) },
-                ]}
-              />
+            <Card
+              title="Training load"
+              className="lg:col-span-2"
+              action={
+                <Segmented
+                  label="Training load view"
+                  value={view}
+                  onChange={changeView}
+                  options={[{ key: 'combined', label: 'Combined' }, { key: 'split', label: 'Run / ride' }]}
+                />
+              }
+            >
+              {view === 'combined' && (
+                <div className="mb-5">
+                  <h3 className="mb-2 text-sm font-medium text-ink-2">Acute vs. chronic</h3>
+                  <TrendChart
+                    data={series}
+                    height={260}
+                    series={[
+                      { key: 'acute_load', label: 'Acute (7-day)', color: 'var(--series-1)', format: (v) => String(Math.round(v)) },
+                      { key: 'chronic_load', label: 'Chronic (28-day)', color: 'var(--series-2)', dashed: true, format: (v) => String(Math.round(v)) },
+                    ]}
+                  />
+                </div>
+              )}
+              <h3 className="mb-2 text-sm font-medium text-ink-2">
+                {view === 'combined' ? 'Daily load, all activities' : 'Daily load by sport'}
+              </h3>
+              <DailyLoadChart data={dailyLoad} split={view === 'split'} />
             </Card>
             <Card title="Acute : chronic workload ratio">
               <TrendChart

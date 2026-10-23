@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useRun } from '../api/hooks'
 import { ShoeSplitEditor } from '../components/ShoeSplitEditor'
 import { Card, ErrorNote, Loading, PageHeader, Stat } from '../components/ui'
-import { CATEGORY_LABELS, duration, longDate, mi, pace } from '../lib/format'
+import { activityLabel, duration, longDate, mi, mph, pace } from '../lib/format'
 
 const ZONE_COLORS = ['#9fb9d9', '#5e8fc7', '#00539b', '#e89923', '#c84e00']
 
@@ -13,15 +13,16 @@ export default function RunDetail() {
   if (run.isLoading) return <Loading />
   if (run.error || !run.data) return <ErrorNote error={run.error} />
   const r = run.data
+  const ride = r.sport === 'ride'
   const zoneTotal = (r.hr_zones_s ?? []).reduce((a, b) => a + b, 0)
   const fastestLap = Math.min(...r.laps.filter((l) => l.miles > 0.2).map((l) => l.pace_s_per_mile ?? Infinity))
 
   return (
     <>
-      <Link to="/runs" className="text-sm text-link">← Runs</Link>
+      <Link to={ride ? '/runs?sport=ride' : '/runs'} className="text-sm text-link">{ride ? '← Rides' : '← Runs'}</Link>
       <PageHeader
         title={r.name}
-        sub={`${longDate(r.local_date)} · ${new Date(r.start_local).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} · ${CATEGORY_LABELS[r.category]}`}
+        sub={`${longDate(r.local_date)} · ${new Date(r.start_local).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} · ${activityLabel(r)}`}
         action={
           <a className="text-sm text-link" href={`https://connect.garmin.com/modern/activity/${r.garmin_activity_id}`} target="_blank" rel="noreferrer">
             Open in Garmin Connect ↗
@@ -32,9 +33,9 @@ export default function RunDetail() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Distance" value={`${mi(r.miles, 2)} mi`} />
         <Stat label="Time" value={duration(r.duration_s)} />
-        <Stat label="Pace" value={pace(r.pace_s_per_mile)} />
+        {ride ? <Stat label="Speed" value={mph(r.speed_mph)} /> : <Stat label="Pace" value={pace(r.pace_s_per_mile)} />}
         <Stat label="Avg HR" value={r.avg_hr ? Math.round(r.avg_hr) : '–'} sub={r.max_hr ? `max ${Math.round(r.max_hr)}` : undefined} />
-        <Stat label="Cadence" value={r.avg_cadence ? Math.round(r.avg_cadence) : '–'} sub="steps/min" />
+        <Stat label="Cadence" value={r.avg_cadence ? Math.round(r.avg_cadence) : '–'} sub={ride ? 'rpm' : 'steps/min'} />
         <Stat
           label="Training effect"
           value={r.aerobic_te ?? '–'}
@@ -42,9 +43,11 @@ export default function RunDetail() {
         />
       </div>
 
-      <Card className="mt-4" title="Shoes">
-        <ShoeSplitEditor run={r} />
-      </Card>
+      {!ride && (
+        <Card className="mt-4" title="Shoes">
+          <ShoeSplitEditor run={r} />
+        </Card>
+      )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card title="Laps" className="lg:col-span-2">
@@ -56,7 +59,7 @@ export default function RunDetail() {
                     <th className="px-2 py-1.5 font-medium">Lap</th>
                     <th className="px-2 py-1.5 text-right font-medium">Miles</th>
                     <th className="px-2 py-1.5 text-right font-medium">Time</th>
-                    <th className="px-2 py-1.5 text-right font-medium">Pace</th>
+                    <th className="px-2 py-1.5 text-right font-medium">{ride ? 'Speed' : 'Pace'}</th>
                     <th className="px-2 py-1.5 text-right font-medium">HR</th>
                     <th className="px-2 py-1.5 text-right font-medium">Cadence</th>
                     <th className="px-2 py-1.5 text-right font-medium">Elev ft</th>
@@ -68,7 +71,7 @@ export default function RunDetail() {
                       <td className="px-2 py-1.5 text-ink-2">{l.idx}</td>
                       <td className="px-2 py-1.5 text-right">{mi(l.miles, 2)}</td>
                       <td className="px-2 py-1.5 text-right">{duration(l.duration_s)}</td>
-                      <td className="px-2 py-1.5 text-right font-medium">{pace(l.pace_s_per_mile)}</td>
+                      <td className="px-2 py-1.5 text-right font-medium">{ride ? mph(l.speed_mph) : pace(l.pace_s_per_mile)}</td>
                       <td className="px-2 py-1.5 text-right">{l.avg_hr ? Math.round(l.avg_hr) : '–'}</td>
                       <td className="px-2 py-1.5 text-right">{l.avg_cadence ? Math.round(l.avg_cadence) : '–'}</td>
                       <td className="px-2 py-1.5 text-right">{l.elev_gain_ft !== null ? Math.round(l.elev_gain_ft) : '–'}</td>
@@ -78,7 +81,7 @@ export default function RunDetail() {
               </table>
             </div>
           ) : (
-            <p className="text-sm text-ink-3">No lap data for this run.</p>
+            <p className="text-sm text-ink-3">No lap data for this {ride ? 'ride' : 'run'}.</p>
           )}
         </Card>
 

@@ -87,14 +87,15 @@ def upsert_run(session: Session, garmin: Garmin | None, activity: dict) -> Run |
     return run
 
 
-def sync_activities(session: Session, garmin: Garmin, start: date, end: date) -> int:
+def sync_activities(session: Session, garmin: Garmin, start: date, end: date) -> dict[str, int]:
+    """Upsert runs and rides; returns how many of each were seen."""
     activities = _call(garmin.get_activities_by_date, start.isoformat(), end.isoformat()) or []
-    count = 0
+    counts = {"run": 0, "ride": 0}
     latest: datetime | None = None
     for activity in activities:
         run = upsert_run(session, garmin, activity)
         if run is not None:
-            count += 1
+            counts[run.sport] += 1
             latest = max(latest or run.start_local, run.start_local)
         session.commit()
     state = get_state(session)
@@ -102,7 +103,7 @@ def sync_activities(session: Session, garmin: Garmin, start: date, end: date) ->
         state.last_activity_start = latest
         session.add(state)
         session.commit()
-    return count
+    return counts
 
 
 def _metrics_row(session: Session, day: date) -> DailyMetrics:
@@ -170,7 +171,7 @@ def run_sync(
     activities_since: date | None = None,
     metrics_since: date | None = None,
 ) -> dict:
-    """Pull new runs and daily metrics. Returns a short summary."""
+    """Pull new runs, rides and daily metrics. Returns a short summary."""
     state = _claim(session)
     today = date.today()
     try:
@@ -186,7 +187,7 @@ def run_sync(
                 if state.last_metrics_date
                 else today - FIRST_SYNC_LOOKBACK
             )
-        runs = sync_activities(session, garmin, activities_since, today)
+        counts = sync_activities(session, garmin, activities_since, today)
         days = sync_metrics(session, garmin, metrics_since, today)
         sync_personal_records(session, garmin)
     except GarminConnectTooManyRequestsError:
@@ -195,9 +196,11 @@ def run_sync(
     except Exception as exc:
         _finish(session, "error", f"Sync failed: {exc}"[:500])
         raise
-    message = f"Synced {runs} run{'s' if runs != 1 else ''} and {days} day{'s' if days != 1 else ''} of metrics"
+    runs, rides = counts["run"], counts["ride"]
+    rides_part = f", {rides} ride{'s' if rides != 1 else ''}" if rides else ""
+    message = f"Synced {runs} run{'s' if runs != 1 else ''}{rides_part} and {days} day{'s' if days != 1 else ''} of metrics"
     _finish(session, "ok", message)
-    return {"runs": runs, "metric_days": days, "message": message}
+    return {"runs": runs, "rides": rides, "metric_days": days, "message": message}
 
 
 def _finish(session: Session, status: str, message: str) -> None:

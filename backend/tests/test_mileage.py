@@ -54,6 +54,6 @@ def test_weekly_series_has_one_entry_per_week_and_real_rolling_average(session):
     today = date(2026, 10, 17)
     for i in range(20):
         make_run(session, date(2026, 6, 1 + i) if i < 20 else today, 5)
-    weeks = weekly_series(session, "3m", today=today)
+    weeks, _ = weekly_series(session, "3m", today=today)
     assert len(weeks) == 13
     assert weeks[-1].start == date(2026, 10, 12)

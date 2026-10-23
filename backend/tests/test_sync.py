@@ -2,6 +2,7 @@ import json
 from datetime import date
 from pathlib import Path
 
+import pytest
 from sqlmodel import select
 
 from app.garmin import parse
@@ -62,24 +63,46 @@ def _fast(monkeypatch):
     monkeypatch.setattr("app.garmin.sync.REQUEST_DELAY_S", 0)
 
 
-def test_parse_activity_skips_non_runs():
+def test_parse_activity_maps_runs_and_rides():
     acts = load("activities.json")
     parsed = [parse.parse_activity(a) for a in acts]
-    assert [p and p["category"] for p in parsed] == ["track", None, "road"]
+    assert [(p["sport"], p["category"]) for p in parsed] == [("run", "track"), ("ride", "road"), ("run", "road")]
     track = parsed[0]
     assert track["local_date"] == date(2026, 10, 14)
     assert track["hr_zones"] == [120.0, 900.0, 600.0, 400.0, 100.0]
 
 
-def test_sync_imports_runs_laps_metrics_and_default_shoe(session, monkeypatch):
+@pytest.mark.parametrize(
+    ("type_key", "category"),
+    [("cycling", "road"), ("road_biking", "road"), ("indoor_cycling", "indoor"), ("virtual_ride", "indoor"),
+     ("mountain_biking", "mountain"), ("gravel_cycling", "gravel")],
+)
+def test_parse_activity_maps_cycling_types_to_rides(type_key, category):
+    activity = {"activityId": 1, "startTimeLocal": "2026-10-15 18:00:00", "activityType": {"typeKey": type_key},
+                "activityTrainingLoad": 40.0, "averageBikingCadenceInRevPerMinute": 85.0}
+    parsed = parse.parse_activity(activity)
+    assert (parsed["sport"], parsed["category"], parsed["name"]) == ("ride", category, "Ride")
+    assert parsed["training_load"] == 40.0 and parsed["avg_cadence"] == 85.0
+
+
+def test_parse_activity_skips_other_sports():
+    swim = {"activityId": 1, "startTimeLocal": "2026-10-15 18:00:00", "activityType": {"typeKey": "lap_swimming"}}
+    assert parse.parse_activity(swim) is None
+
+
+def test_sync_imports_runs_rides_laps_metrics_and_default_shoe(session, monkeypatch):
     _fast(monkeypatch)
     shoe = make_shoe(session, "Daily", is_default=True)
     result = run_sync(session, FakeGarmin(), activities_since=date(2026, 10, 13), metrics_since=date(2026, 10, 15))
 
-    runs = session.exec(select(Run).order_by(Run.start_local)).all()
-    assert result["runs"] == 2 and len(runs) == 2
-    assert len(session.exec(select(Lap).where(Lap.run_id == runs[0].id)).all()) == 3
-    assert [s.shoe_id for s in session.exec(select(RunShoe))] == [shoe.id, shoe.id]
+    activities = session.exec(select(Run).order_by(Run.start_local)).all()
+    assert [a.sport for a in activities] == ["run", "ride", "run"]
+    assert result["runs"] == 2 and result["rides"] == 1
+    assert "1 ride" in result["message"]
+    assert len(session.exec(select(Lap).where(Lap.run_id == activities[0].id)).all()) == 3
+    # Rides never get a shoe.
+    assert [(s.run_id, s.shoe_id) for s in session.exec(select(RunShoe))] == [
+        (activities[0].id, shoe.id), (activities[2].id, shoe.id)]
 
     metrics = session.get(DailyMetrics, date(2026, 10, 15))
     assert metrics.vo2max == 54.2
@@ -104,10 +127,10 @@ def test_resync_is_idempotent_and_keeps_shoe_edits(session, monkeypatch):
     session.commit()
 
     run_sync(session, garmin, activities_since=date(2026, 10, 13), metrics_since=date(2026, 10, 15))
-    assert len(session.exec(select(Run)).all()) == 2
-    assert len(session.exec(select(Lap)).all()) == 6  # laps fetched once per new run
+    assert len(session.exec(select(Run)).all()) == 3
+    assert len(session.exec(select(Lap)).all()) == 9  # laps fetched once per new activity
     assert [s.shoe_id for s in session.exec(select(RunShoe).where(RunShoe.run_id == run.id))] == [other.id]
-    assert sum(1 for name, _ in garmin.calls if name == "splits") == 2
+    assert sum(1 for name, _ in garmin.calls if name == "splits") == 3
 
 
 def test_sync_status_endpoint_reports_not_connected(logged_in):

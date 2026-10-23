@@ -30,7 +30,9 @@ def default_shoe_for(session: Session, category: str) -> Shoe | None:
 
 
 def apply_default_shoe(session: Session, run: Run) -> None:
-    """Give a newly imported run its default shoe, covering the whole distance."""
+    """Give a newly imported run its default shoe, covering the whole distance. Rides get none."""
+    if run.sport != "run":
+        return
     has_segments = session.exec(select(RunShoe).where(RunShoe.run_id == run.id)).first()
     if has_segments or run.distance_m <= 0:
         return
@@ -41,6 +43,8 @@ def apply_default_shoe(session: Session, run: Run) -> None:
 
 def resolve_segments(session: Session, run: Run, segments: list[SegmentInput]) -> list[RunShoe]:
     """Validate a full replacement list of shoe segments for a run."""
+    if run.sport != "run" and segments:
+        raise SegmentError("Rides don't track shoes")
     laps = {lap.idx: lap for lap in session.exec(select(Lap).where(Lap.run_id == run.id))}
     resolved: list[RunShoe] = []
     for seg in segments:
