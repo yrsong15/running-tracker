@@ -16,6 +16,17 @@ export const pace = (secondsPerMile: number | null | undefined) =>
 const parseDay = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00`)
 
 export const shortDate = (iso: string) => parseDay(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+export const fullDate = (iso: string) =>
+  parseDay(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+
+/** "Oct 12 – 18, 2026", or with both years when a week spans New Year. */
+export function weekRange(startIso: string, endIso: string): string {
+  const start = parseDay(startIso)
+  const end = parseDay(endIso)
+  if (start.getFullYear() !== end.getFullYear()) return `${fullDate(startIso)} – ${fullDate(endIso)}`
+  return `${shortDate(startIso)} – ${shortDate(endIso)}, ${end.getFullYear()}`
+}
+
 export const longDate = (iso: string) =>
   parseDay(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 export const monthYear = (iso: string) => parseDay(iso).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })

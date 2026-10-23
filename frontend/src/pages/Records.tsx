@@ -104,7 +104,7 @@ export default function Records() {
                       const date = new Date(thisYear, 0, p.day_of_year)
                       return (
                         <ChartTooltip
-                          title={date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          title={`${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} (${thisYear} vs ${thisYear - 1})`}
                           rows={[
                             ...(p.this !== undefined ? [{ label: String(thisYear), value: `${mi(p.this)} mi`, color: 'var(--series-1)' }] : []),
                             ...(p.last !== undefined ? [{ label: String(thisYear - 1), value: `${mi(p.last)} mi`, color: 'var(--series-2)' }] : []),

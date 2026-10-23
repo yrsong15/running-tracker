@@ -4,7 +4,7 @@ import {
 } from 'recharts'
 
 import type { Week } from '../api/types'
-import { mi, monthYear, shortDate } from '../lib/format'
+import { fullDate, mi, monthYear, shortDate, weekRange } from '../lib/format'
 
 const axisTick = { fill: 'var(--ink-3)', fontSize: 12 }
 
@@ -81,7 +81,7 @@ export function WeeklyMileageChart({ weeks, selected, onSelect }: {
                 const w = payload[0].payload as Week
                 return (
                   <ChartTooltip
-                    title={`${shortDate(w.week_start)} – ${shortDate(w.week_end)}`}
+                    title={weekRange(w.week_start, w.week_end)}
                     rows={[
                       { label: 'Miles', value: mi(w.miles), color: 'var(--series-1)' },
                       { label: '4-wk avg', value: mi(w.rolling_avg), color: 'var(--series-2)' },
@@ -174,7 +174,7 @@ export function TrendChart({ data, series, yFormat, height = 220, reversed = fal
                 if (!active || !payload?.length) return null
                 return (
                   <ChartTooltip
-                    title={shortDate(String(label))}
+                    title={fullDate(String(label))}
                     rows={series
                       .map((s) => {
                         const v = (payload[0].payload as Record<string, number | null>)[s.key]
