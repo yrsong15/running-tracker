@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 from pydantic import NaiveDatetime
-from sqlalchemy import JSON, Column, Text
+from sqlalchemy import JSON, BigInteger, Column, DateTime, Text
 from sqlmodel import Field, SQLModel
 
 METERS_PER_MILE = 1609.344
@@ -19,16 +19,16 @@ class GarminAuth(SQLModel, table=True):
     tokens_encrypted: str | None = Field(default=None, sa_column=Column(Text))
     status: str = "disconnected"  # disconnected | ok | needs_reconnect
     last_error: str | None = None
-    updated_at: NaiveDatetime = Field(default_factory=utcnow)
+    updated_at: NaiveDatetime = Field(default_factory=utcnow, sa_column=Column(DateTime(timezone=False), nullable=False))
 
 
 class SyncState(SQLModel, table=True):
     __tablename__ = "sync_state"
 
     id: int = Field(default=1, primary_key=True)
-    last_sync_at: NaiveDatetime | None = None
-    started_at: NaiveDatetime | None = None
-    last_activity_start: NaiveDatetime | None = None
+    last_sync_at: NaiveDatetime | None = Field(default=None, sa_column=Column(DateTime(timezone=False), nullable=True))
+    started_at: NaiveDatetime | None = Field(default=None, sa_column=Column(DateTime(timezone=False), nullable=True))
+    last_activity_start: NaiveDatetime | None = Field(default=None, sa_column=Column(DateTime(timezone=False), nullable=True))
     last_metrics_date: date | None = None
     status: str = "idle"  # idle | running | ok | error
     message: str | None = None
@@ -38,9 +38,10 @@ class Run(SQLModel, table=True):
     __tablename__ = "runs"
 
     id: int | None = Field(default=None, primary_key=True)
-    garmin_activity_id: int = Field(unique=True, index=True)
-    start_utc: NaiveDatetime
-    start_local: NaiveDatetime
+    # Garmin activity IDs exceed 32-bit integers.
+    garmin_activity_id: int = Field(sa_column=Column(BigInteger, unique=True, index=True, nullable=False))
+    start_utc: NaiveDatetime = Field(sa_column=Column(DateTime(timezone=False), nullable=False))
+    start_local: NaiveDatetime = Field(sa_column=Column(DateTime(timezone=False), nullable=False))
     local_date: date = Field(index=True)
     name: str = ""
     type_key: str = "running"
@@ -87,7 +88,7 @@ class Shoe(SQLModel, table=True):
     default_for_category: str | None = None
     retired_at: date | None = None
     notes: str | None = None
-    created_at: NaiveDatetime = Field(default_factory=utcnow)
+    created_at: NaiveDatetime = Field(default_factory=utcnow, sa_column=Column(DateTime(timezone=False), nullable=False))
 
 
 class RunShoe(SQLModel, table=True):
@@ -130,5 +131,5 @@ class PersonalRecord(SQLModel, table=True):
 
     type_id: int = Field(primary_key=True)
     value: float
-    activity_id: int | None = None
+    activity_id: int | None = Field(default=None, sa_column=Column(BigInteger))
     record_date: date | None = None
